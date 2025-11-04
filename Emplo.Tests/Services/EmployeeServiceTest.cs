@@ -21,6 +21,8 @@ public class EmployeeServiceTest : TestBase
         _vacationPackage = new VacationPackage{GrantedDays = 26, Year = 2025};
     }
 
+    #region CountFreeDaysForEmployeeClass
+    
     [Test]
     public void CountFreeDaysForEmployee_WhenNoVacations()
     {
@@ -44,7 +46,7 @@ public class EmployeeServiceTest : TestBase
             }
         };
         var result = _service.CountFreeDaysForEmployee(_employee, vacations, _vacationPackage);
-        Assert.That(result, Is.EqualTo(21));
+        Assert.That(result, Is.EqualTo(20));
     }
     
     [Test]
@@ -80,7 +82,7 @@ public class EmployeeServiceTest : TestBase
             }
         };
         var result = _service.CountFreeDaysForEmployee(_employee, vacations, _vacationPackage);
-        Assert.That(result, Is.EqualTo(26));
+        Assert.That(result, Is.EqualTo(20));
     }
     [Test]
     public void CountFreeDaysForEmployee_WhenVacationInPast()
@@ -91,11 +93,75 @@ public class EmployeeServiceTest : TestBase
             {
                 EmployeeId = 1,
                 DateSince = DateTime.UtcNow.AddDays(-28),
-                DateUntil = DateTime.UtcNow.AddDays(-1),
+                DateUntil = DateTime.UtcNow.AddDays(-1)
             }
         };
         var result = _service.CountFreeDaysForEmployee(_employee, vacations, _vacationPackage);
         Assert.That(result, Is.EqualTo(0));
     }
     
+    [Test]
+    public void CountFreeDaysForVacationCrossingYearBoundary()
+    {
+        var vacations = new List<Vacation>
+        {
+            new Vacation
+            {
+                EmployeeId = 1,
+                DateSince = new DateTime(2024, 12, 29),
+                DateUntil = new DateTime(2025, 1, 3),
+                IsPartialVacation = 0,
+            }
+        };
+        var result = _service.CountFreeDaysForEmployee(_employee, vacations, _vacationPackage);
+        Assert.That(result, Is.EqualTo(23));
+    }
+    [Test]
+    public void CountFreeDaysForVacationCrossingEndYearBoundary()
+    {
+        var vacations = new List<Vacation>
+        {
+            new Vacation
+            {
+                EmployeeId = 1,
+                DateSince = new DateTime(2025, 12, 29),
+                DateUntil = new DateTime(2026, 1, 2),
+            }
+        };
+        var result = _service.CountFreeDaysForEmployee(_employee, vacations, _vacationPackage);
+        Assert.That(result, Is.EqualTo(23));
+    }
+    #endregion
+
+    #region IfEmployeeCanRequestVacationClass
+
+    [Test]
+    public void Employee_Can_Request_Vacation()
+    {
+        var vacations = new List<Vacation>();
+        
+        var result = _service.IfEmployeeCanRequestVacation(_employee, vacations, _vacationPackage, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2));
+        Assert.That(result, Is.True);
+    }
+    
+    [Test]
+    public void Employee_Cant_Request_Vacation()
+    {
+        var vacations = new List<Vacation>()
+        {
+            new Vacation
+            {
+                EmployeeId = 1,
+                DateSince = DateTime.UtcNow.AddDays(1),
+                DateUntil = DateTime.UtcNow.AddDays(5),
+                IsPartialVacation = 0,
+                NumberOfHours = 40
+            }
+        };
+        
+        var result = _service.IfEmployeeCanRequestVacation(_employee, vacations, _vacationPackage, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2));
+        Assert.That(result, Is.False);
+    }
+
+    #endregion
 }
