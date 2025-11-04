@@ -21,5 +21,10 @@ public abstract class TestBase
     protected void TearDown()
     {
         Context.Dispose();
+        if (TestContext.CurrentContext.Result.Outcome.Status == NUnit.Framework.Interfaces.TestStatus.Failed)
+        {
+            TestContext.Out.WriteLine($"Test {TestContext.CurrentContext.Test.Name} failed.");
+            TestContext.Out.WriteLine($"Message: {TestContext.CurrentContext.Result.Message}");
+        }
     }
 }
