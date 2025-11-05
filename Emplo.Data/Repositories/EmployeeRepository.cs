@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Headers;
-using Emplo.Core.DTOs.Responses;
+﻿using Emplo.Core.DTOs.Responses;
 using Emplo.Core.Entities;
 using Emplo.Core.Interfaces;
 using Emplot.Data.Data;
@@ -30,7 +29,8 @@ public class EmployeeRepository(AppDbContext context) : IEmployeeRepository
                 Id = e.Id,
                 Name = e.Name,
                 UsedDays = e.Vacations
-                    .Where(v => v.DateSince.Year == currentYear && v.DateUntil < today)
+                    .Where(v => v.DateUntil < today &&
+                                v.DateSince.Year == currentYear || (v.DateUntil.Year == currentYear && v.DateSince.Year < currentYear ))
                     .Sum(v => v.IsPartialVacation == 1 
                     ? (double)v.NumberOfHours / 8
                     : (v.DateUntil - v.DateSince).Days)
