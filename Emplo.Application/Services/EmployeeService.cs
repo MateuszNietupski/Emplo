@@ -6,6 +6,7 @@ namespace Emplo.Application.Services;
 
 public class EmployeeService(ILogger<EmployeeService> logger) : IEmployeeService
 {
+    private List<EmployeeStructure> _employeeStructure = new();
     public int CountFreeDaysForEmployee(Employee employee, List<Vacation> vacations, VacationPackage vacationPackage)
     {
         try
@@ -78,5 +79,58 @@ public class EmployeeService(ILogger<EmployeeService> logger) : IEmployeeService
             }     
         }
         return true;
+    }
+
+    public List<EmployeeStructure> FillEmployeesStrucutre(List<Employee> employees)
+    {
+        _employeeStructure.Clear();
+        var employeeMap = employees.ToDictionary(e => e.Id, e => e);
+
+        foreach (var employee in employees)
+        {
+            if (!employee.SuperiorId.HasValue)
+            {
+                logger.LogWarning("Employee {EmployeeId} has no superior", employee.Id);
+                continue;           
+            }
+            
+            var visited = new HashSet<int>();
+            var currentSuperiorId = employee.SuperiorId;
+            var rank = 1;
+            
+            while (currentSuperiorId.HasValue)
+            {
+                if (visited.Contains(currentSuperiorId.Value))
+                {
+                    logger.LogWarning("Employee {EmployeeId} has circular reference", employee.Id);
+                    break;
+                }
+                visited.Add(currentSuperiorId.Value);
+                _employeeStructure.Add(new EmployeeStructure
+                {
+                    EmployeeId = employee.Id,
+                    SuperiorId = currentSuperiorId.Value,
+                    Rank = rank
+                });
+                if (employeeMap.TryGetValue(currentSuperiorId.Value, out var superior))
+                {
+                    rank++;
+                    currentSuperiorId = superior.SuperiorId; 
+                }
+                else
+                {
+                    logger.LogWarning("Superior {SuperiorId} not found in list for employee {EmployeeId}",
+                        currentSuperiorId.Value, employee.Id );
+                    break;           
+                }
+            }
+        }
+        return _employeeStructure;
+    }
+
+    public int? GetSuperiorRowOfEmployee(int employeeId, int superiorId)
+    {
+        return _employeeStructure.FirstOrDefault(
+            e => e.EmployeeId == employeeId && e.SuperiorId == superiorId)?.Rank;       
     }
 }

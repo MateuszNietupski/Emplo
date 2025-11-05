@@ -11,7 +11,7 @@ public class EmployeeServiceTest : TestBase
     private EmployeeService _service;
     private Employee _employee;
     private VacationPackage _vacationPackage;
-    
+    private List<Employee> _employees = null!;
     [SetUp]
     public void Setup()
     {
@@ -19,6 +19,13 @@ public class EmployeeServiceTest : TestBase
         _service = new EmployeeService(logger);
         _employee = new Employee {Id = 1, Name = "Jan Nowak"};
         _vacationPackage = new VacationPackage{GrantedDays = 26, Year = 2025};
+        _employees = new List<Employee>
+        {
+            new Employee {Id = 1, Name = "Jan Kowalski"},
+            new Employee {Id = 2, Name = "Kamil Nowak", SuperiorId = 1},
+            new Employee {Id = 3, Name = "Anna Mariacka", SuperiorId = 1},
+            new Employee {Id = 4, Name = "Andrzej Albacki", SuperiorId = 2},
+        };
     }
 
     #region CountFreeDaysForEmployeeClass
@@ -161,6 +168,36 @@ public class EmployeeServiceTest : TestBase
         
         var result = _service.IfEmployeeCanRequestVacation(_employee, vacations, _vacationPackage, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2));
         Assert.That(result, Is.False);
+    }
+
+    #endregion
+
+    #region FillEmployeesStrucutreClass
+
+    [Test]
+    public void FillEmployeesStrucutre_ShouldPositive()
+    {
+        var structures = _service.FillEmployeesStrucutre(_employees);
+        
+        Assert.That(structures.Any(s => s.EmployeeId == 3 && s.SuperiorId == 1 && s.Rank == 1), Is.True);
+        Assert.That(structures.Any(s => s.EmployeeId == 2 && s.SuperiorId == 1 && s.Rank == 1), Is.True);
+        Assert.That(structures.Any(s => s.EmployeeId == 4 && s.SuperiorId == 1 && s.Rank == 2), Is.True);
+        Assert.That(structures.Any(s => s.EmployeeId == 4 && s.SuperiorId == 2 && s.Rank == 1), Is.True);
+    }
+
+    #endregion
+
+    #region GetSuperiorRowOfEmployeeClass
+
+    [Test]
+    public void GetSuperiorRowOfEmployee_ShouldPositive()
+    {
+        _service.FillEmployeesStrucutre(_employees);
+        
+        Assert.That(_service.GetSuperiorRowOfEmployee(2, 1), Is.EqualTo(1));
+        Assert.That(_service.GetSuperiorRowOfEmployee(3, 1), Is.EqualTo(1));
+        Assert.That(_service.GetSuperiorRowOfEmployee(4, 1), Is.EqualTo(2));
+        Assert.That(_service.GetSuperiorRowOfEmployee(4, 3), Is.Null);
     }
 
     #endregion
