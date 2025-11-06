@@ -1,5 +1,6 @@
 
 Zadanie zostało zrealizowane jako aplikacja w architekturze warstwowej z podziałem na warstwy:
+
 • **Data** - warstwa dostępu do danych zawierająca bazę danych oraz repozytoria obsługujące żądania do niej
 
 • **Application** - warstwa zawierająca serwisy z logiką biznesową
